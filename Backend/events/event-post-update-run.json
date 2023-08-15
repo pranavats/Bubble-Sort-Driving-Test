@@ -1,0 +1,4 @@
+{
+  "httpMethod": "POST",
+  "body": "{\"id\": \"id1\", \"runId\": \"runId1\", \type\": \"type1\", \"payload\": \"payload1\", \"preState\": \"preState1\", \"postState\": \"postState1\", \"timestamp\": \"timestamp1\"}"
+}

@@ -1,0 +1,348 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  BubbleSort-DT-Custom
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+  - AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Tracing: Active
+  Api:
+    TracingEnabled: True
+    Cors:
+      AllowOrigin: "'*'"
+
+Resources:
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: bubblesort-dt-custom-common-layer
+      Description: Dependencies and middlewares for our backend
+      ContentUri: common-layer/
+      CompatibleRuntimes:
+        - nodejs16.x
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-all-items.js
+  getCreateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-create-user.getCreateUserHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A Get request that creates user and returns the unique id.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          USER_TABLE: !Ref UserTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /createUser/{rollno}
+            Method: GET
+
+  # This is a Lambda function config associated with the source code: get-num-odd.js
+  getNumOddFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-num-odd.getNumOddHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Layers:
+        - !Ref CommonLayer
+      Description: A simple example function to test middleware
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /checkOdd/{num}
+            Method: GET
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getAlgorithmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-algorithm.getAlgorithmHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP get method to get one algorithm based on the ones in DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AlgorithmTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ALGORITHM_TABLE: !Ref AlgorithmTable
+          USER_TABLE: !Ref UserTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /getAlgorithm/{id}
+            Method: GET
+
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getRunTransitionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-run-transitions.getRunTransitionsHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP get method to get one algorithm based on the ones in DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # All tables
+        - DynamoDBReadPolicy:
+            TableName: !Ref RunTransitionTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          RUN_TABLE: !Ref RunTable
+          RUN_TRANSITION_TABLE: !Ref RunTransitionTable
+
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /getRunTransitions/{runId}
+            Method: GET
+
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-get-data.getDataHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP get method to get one algorithm based on the ones in DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # All tables
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AlgorithmTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref RunTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref RunTransitionTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ALGORITHM_TABLE: !Ref AlgorithmTable
+          USER_TABLE: !Ref UserTable
+          RUN_TABLE: !Ref RunTable
+          RUN_TRANSITION_TABLE: !Ref RunTransitionTable
+
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /getData/{table}
+            Method: GET
+
+  getCompleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-complete.getCompleteHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP get method to get one algorithm based on the ones in DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          USER_TABLE: !Ref UserTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /complete/{id}
+            Method: GET
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: put-item.js
+  postCreateRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/post-create-run.postCreateRunHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP post method to create a run linked to user id and add to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RunTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          RUN_TABLE: !Ref RunTable
+          USER_TABLE: !Ref UserTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /createRun
+            Method: POST
+
+  postUpdateAlgorithmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/post-update-algorithm.postUpdateAlgorithmHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP post method to create a run linked to user id and add to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AlgorithmTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ALGORITHM_TABLE: !Ref AlgorithmTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /updateAlgorithm
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: put-item.js
+  postUpdateRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/post-update-run.postUpdateRunHandler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple HTTP post method to update a run linked to user id and add to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RunTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RunTransitionTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          RUN_TABLE: !Ref RunTable
+          RUN_TRANSITION_TABLE: !Ref RunTransitionTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /updateRun
+            Method: POST
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
+  SampleTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  UserTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  AlgorithmTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  RunTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  RunTransitionTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"

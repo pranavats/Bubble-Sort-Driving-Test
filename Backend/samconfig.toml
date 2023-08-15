@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "BubbleSort-DT-Backend"
+s3_prefix = "BubbleSort-DT-Backend"
+region = "eu-north-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+resolve_s3 = true
